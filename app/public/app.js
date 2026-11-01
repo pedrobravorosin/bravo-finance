@@ -12,7 +12,11 @@ const COMER = ["Restaurantes", "Bares e baladas", "Delivery"];
 
 // ---------- Catálogo de cards ----------
 const METRICAS = {
-  total:        { nome: "Gasto do mês" },
+  total:        { nome: "Gasto (segue a visão)" },
+  acumAno:      { nome: "Acumulado no ano" },
+  acumPeriodo:  { nome: "Acumulado no período" },
+  media3:       { nome: "Média dos últimos 3 meses" },
+  projAno:      { nome: "Projeção para o ano" },
   media:        { nome: "Média mensal no período" },
   comer:        { nome: "Comer e beber fora" },
   parcelas:     { nome: "Parcelas a vencer" },
@@ -27,7 +31,7 @@ const METRICAS = {
   topEst:       { nome: "Onde mais gastou" },
 };
 const PAINEIS = {
-  total:   { nome: "Total por mês" },
+  total:   { nome: "Gastos ao longo dos meses" },
   catmes:  { nome: "Categorias ao longo dos meses" },
   cat:     { nome: "Para onde foi o dinheiro" },
   parc:    { nome: "Parcelas já comprometidas" },
@@ -38,8 +42,8 @@ const PAINEIS = {
 };
 const PADRAO = () => ({
   kpis: [
-    { id: "k1", m: "total" }, { id: "k2", m: "media" }, { id: "k3", m: "comer" },
-    { id: "k4", m: "parcelas" }, { id: "k5", m: "assinaturas" }, { id: "k6", m: "tarifas" },
+    { id: "k1", m: "total" }, { id: "k2", m: "acumAno" }, { id: "k3", m: "media3" },
+    { id: "k4", m: "comer" }, { id: "k5", m: "parcelas" }, { id: "k6", m: "assinaturas" },
   ],
   paineis: [
     { id: "total" }, { id: "catmes" }, { id: "cat" }, { id: "parc" },
@@ -53,7 +57,8 @@ let PREFS = PADRAO();
 let sel = null;
 let editando = false;
 const charts = {};
-const F = { de: "", ate: "", cats: null, banco: "", cartao: "", tipo: "", busca: "" }; // cats null = todas
+const F = { de: "", ate: "", cats: null, banco: "", cartao: "", tipo: "", busca: "", visao: "mes" }; // cats null = todas
+const VISOES = { mes: "Mês", acum: "Acumulado no período", ano: "Acumulado no ano", media3: "Média de 3 meses" };
 
 // ---------- API ----------
 async function api(path, opts = {}) {
@@ -96,6 +101,7 @@ async function carregarPrefs() {
       PREFS.paineis = PREFS.paineis.filter((x) => PAINEIS[x.id]);
     }
     if (p && p.filtros) Object.assign(F, p.filtros, { cats: p.filtros.cats ? new Set(p.filtros.cats) : null });
+    if (!VISOES[F.visao]) F.visao = "mes";
   } catch { /* usa o padrão */ }
 }
 
@@ -189,10 +195,29 @@ function montarControles() {
   const cartoes = [...mapa.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   $("#fCartao").innerHTML = `<option value="">Todos</option>` + cartoes.map(([k, n]) => `<option value="${esc(k)}">${esc(n)}</option>`).join("");
   $("#fCartao").value = mapa.has(F.cartao) ? F.cartao : "";
-  $("#fTipo").value = F.tipo || "";
+  marcarSegmentos();
   $("#fBusca").value = F.busca || "";
   $("#fCat").innerHTML = DB.categorias.map((c) => `<label><input type="checkbox" value="${esc(c)}" ${!F.cats || F.cats.has(c) ? "checked" : ""}> ${esc(c)}</label>`).join("");
   resumoCats();
+}
+function marcarSegmentos() {
+  for (const b of document.querySelectorAll("[data-visao]")) b.setAttribute("aria-pressed", String(b.dataset.visao === F.visao));
+  for (const b of document.querySelectorAll("[data-tipo]")) b.setAttribute("aria-pressed", String(b.dataset.tipo === (F.tipo || "")));
+  const all = ids(), atual = presetAtual(all);
+  for (const b of document.querySelectorAll("[data-periodo]")) b.setAttribute("aria-pressed", String(b.dataset.periodo === atual));
+}
+function presetDatas(p, all) {
+  const ult = all[all.length - 1];
+  if (!ult) return ["", ""];
+  if (p === "tudo") return [all[0], ult];
+  if (p === "ano") return [all.find((x) => x.slice(0, 4) === ult.slice(0, 4)), ult];
+  const n = +p, de = all.find((x) => x >= addMes(ult, -(n - 1)));
+  return [de, ult];
+}
+function presetAtual(all) {
+  const de = all.includes(F.de) ? F.de : all[0], ate = all.includes(F.ate) ? F.ate : all[all.length - 1];
+  for (const p of ["3", "6", "12", "ano", "tudo"]) { const [a, b] = presetDatas(p, all); if (a === de && b === ate) return p; }
+  return "";
 }
 function resumoCats() {
   const n = F.cats ? F.cats.size : DB.categorias.length;
@@ -204,13 +229,44 @@ function lerCats() {
   resumoCats();
 }
 
+// ---------- Visões: mês, acumulado e média ----------
+// Quais faturas entram no "escopo" do mês em destaque, conforme a visão escolhida.
+function faturasDoEscopo(visao = F.visao) {
+  const fs = periodo();
+  const ate = fs.filter((x) => x.meta.id <= sel);
+  if (visao === "acum") return ate;
+  if (visao === "ano") return DB.faturas.filter((x) => x.meta.id <= sel && x.meta.id.slice(0, 4) === sel.slice(0, 4));
+  if (visao === "media3") return DB.faturas.filter((x) => x.meta.id <= sel && x.meta.id >= addMes(sel, -2));
+  return DB.faturas.filter((x) => x.meta.id === sel);
+}
+function rotuloEscopo(fs, visao = F.visao) {
+  if (!fs.length) return "";
+  const a = rotulo(fs[0].meta.id), b = rotulo(fs[fs.length - 1].meta.id);
+  if (visao === "mes") return b;
+  if (visao === "ano") return `${sel.slice(0, 4)} até ${b}`;
+  if (visao === "media3") return `média de ${a === b ? b : a + " a " + b}`;
+  return a === b ? b : `${a} a ${b}`;
+}
+// Transforma uma série mensal conforme a visão (acumulado, acumulado no ano, média móvel de 3 meses).
+function serieVisao(meses, valores, visao = F.visao) {
+  let acc = 0;
+  return valores.map((v, i) => {
+    if (visao === "acum") return (acc += v);
+    if (visao === "ano") { if (i > 0 && meses[i].slice(0, 4) !== meses[i - 1].slice(0, 4)) acc = 0; return (acc += v); }
+    if (visao === "media3") { const j = valores.slice(Math.max(0, i - 2), i + 1); return j.reduce((a, b) => a + b, 0) / j.length; }
+    return v;
+  });
+}
+
 // ---------- Métricas dos cards ----------
 function contexto() {
   const fs = periodo();
   const f = DB.faturas.find((x) => x.meta.id === sel);
   const prev = DB.faturas[DB.faturas.indexOf(f) - 1];
-  const t = txs(f);
-  return { fs, f, prev, t, compras: t.filter((x) => x.valor > 0 && x.tipo === "compra") };
+  const esc0 = faturasDoEscopo();
+  const div = F.visao === "media3" ? esc0.length || 1 : 1;
+  const t = esc0.flatMap(txs);
+  return { fs, f, prev, t, esc: esc0, div, S: (arr) => soma(arr) / div, compras: t.filter((x) => x.valor > 0 && x.tipo === "compra") };
 }
 function delta(atual, anterior, nomePrev) {
   if (!anterior) return "";
@@ -218,36 +274,65 @@ function delta(atual, anterior, nomePrev) {
   return `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "▲" : "▼"} ${pct(Math.abs(d))}</span> vs ${nomePrev}`;
 }
 function calcular(m, c) {
-  const nm = rotulo(sel), np = c.prev ? rotulo(c.prev.meta.id) : "";
-  const tot = soma(c.t);
+  const nm = rotulo(sel), np = c.prev && F.visao === "mes" ? rotulo(c.prev.meta.id) : "";
+  const mesmo = F.visao === "mes";
+  const onde = mesmo ? "do mês" : F.visao === "media3" ? "por mês" : "do período";
+  const tot = c.S(c.t);
   if (m.startsWith("cat:")) {
     const cat = m.slice(4);
-    const v = soma(c.t.filter((x) => x.categoria === cat));
-    const vp = c.prev ? soma(txs(c.prev).filter((x) => x.categoria === cat)) : null;
+    const v = c.S(c.t.filter((x) => x.categoria === cat));
+    const vp = c.prev && mesmo ? soma(txs(c.prev).filter((x) => x.categoria === cat)) : null;
     const dl = delta(v, vp, np);
-    return { titulo: cat, valor: brl0(v), det: `${pct(v / tot)} do mês${dl ? " · " + dl : ""}` };
+    return { titulo: cat, valor: brl0(v), det: `${pct(v / tot)} ${onde}${dl ? " · " + dl : ""}` };
   }
   switch (m) {
     case "total": {
+      if (!mesmo) {
+        const v = c.esc.reduce((a, x) => a + valorFatura(x), 0) / c.div;
+        const tit = { acum: "Acumulado", ano: `Acumulado em ${sel.slice(0, 4)}`, media3: "Média mensal (3 meses)" }[F.visao];
+        return { titulo: (filtrosAtivos() ? "Filtrado · " : "") + tit, valor: brl0(v), det: rotuloEscopo(c.esc) };
+      }
       const v = valorFatura(c.f), vp = c.prev ? valorFatura(c.prev) : null;
       return { titulo: filtrosAtivos() ? `Gasto filtrado de ${nm}` : `Fatura de ${nm}`, valor: brl0(v), det: delta(v, vp, np) || "Sem mês anterior" };
+    }
+    case "acumAno": {
+      const fs = faturasDoEscopo("ano"), v = fs.reduce((a, x) => a + valorFatura(x), 0);
+      const fsAnt = DB.faturas.filter((x) => x.meta.id.slice(0, 4) === String(+sel.slice(0, 4) - 1) && x.meta.id.slice(5) <= sel.slice(5));
+      const vAnt = fsAnt.length === fs.length ? fsAnt.reduce((a, x) => a + valorFatura(x), 0) : null;
+      return { titulo: `Acumulado em ${sel.slice(0, 4)}`, valor: brl0(v), det: delta(v, vAnt, `mesmo período de ${+sel.slice(0, 4) - 1}`) || `${fs.length} ${fs.length === 1 ? "mês" : "meses"}, até ${nm}` };
+    }
+    case "acumPeriodo": {
+      const fs = faturasDoEscopo("acum"), v = fs.reduce((a, x) => a + valorFatura(x), 0);
+      return { titulo: "Acumulado no período", valor: brl0(v), det: rotuloEscopo(fs, "acum") };
+    }
+    case "media3": {
+      const fs = faturasDoEscopo("media3"), v = fs.reduce((a, x) => a + valorFatura(x), 0) / (fs.length || 1);
+      const ant = DB.faturas.filter((x) => x.meta.id <= addMes(sel, -3) && x.meta.id >= addMes(sel, -5));
+      const vAnt = ant.length === 3 ? ant.reduce((a, x) => a + valorFatura(x), 0) / 3 : null;
+      return { titulo: "Média dos últimos 3 meses", valor: brl0(v), det: delta(v, vAnt, "3 meses antes") || rotuloEscopo(fs, "acum") };
+    }
+    case "projAno": {
+      const fs = faturasDoEscopo("ano"), v = fs.reduce((a, x) => a + valorFatura(x), 0);
+      const m3 = faturasDoEscopo("media3"), med = m3.reduce((a, x) => a + valorFatura(x), 0) / (m3.length || 1);
+      const faltam = 12 - +sel.slice(5);
+      return { titulo: `Projeção para ${sel.slice(0, 4)}`, valor: brl0(v + med * faltam), det: faltam ? `acumulado + ${faltam} ${faltam === 1 ? "mês" : "meses"} na média recente` : "ano completo" };
     }
     case "media": {
       const v = c.fs.reduce((a, x) => a + valorFatura(x), 0) / (c.fs.length || 1);
       return { titulo: `Média de ${c.fs.length} ${c.fs.length === 1 ? "mês" : "meses"}`, valor: brl0(v), det: c.fs.length ? `${rotulo(c.fs[0].meta.id)} a ${rotulo(c.fs[c.fs.length - 1].meta.id)}` : "" };
     }
-    case "comer": { const v = soma(c.t.filter((x) => COMER.includes(x.categoria))); return { valor: brl0(v), det: `${pct(v / tot)} dos gastos do mês` }; }
+    case "comer": { const v = c.S(c.t.filter((x) => COMER.includes(x.categoria))); return { valor: brl0(v), det: `${pct(v / tot)} dos gastos ${onde}` }; }
     case "parcelas": return { valor: brl0(c.f.meta.parcelas_futuras ?? 0), det: "Saldo já comprometido" };
-    case "parcelasMes": { const v = soma(c.t.filter((x) => x.parcela)); return { valor: brl0(v), det: `${pct(v / tot)} do mês` }; }
-    case "vista": { const v = soma(c.t.filter((x) => !x.parcela && x.tipo === "compra")); return { valor: brl0(v), det: `${pct(v / tot)} do mês` }; }
-    case "assinaturas": return { valor: brl0(soma(c.t.filter((x) => x.categoria === "Assinaturas"))), det: "Serviços digitais e recorrentes" };
-    case "tarifas": { const v = soma(c.t.filter((x) => x.categoria === "Tarifas e juros")); return { valor: brl(v), det: v > 0.01 ? "Confira o que foi cobrado" : "Nada cobrado. Ótimo." }; }
+    case "parcelasMes": { const v = c.S(c.t.filter((x) => x.parcela)); return { valor: brl0(v), det: `${pct(v / tot)} ${onde}` }; }
+    case "vista": { const v = c.S(c.t.filter((x) => !x.parcela && x.tipo === "compra")); return { valor: brl0(v), det: `${pct(v / tot)} ${onde}` }; }
+    case "assinaturas": return { valor: brl0(c.S(c.t.filter((x) => x.categoria === "Assinaturas"))), det: mesmo ? "Serviços digitais e recorrentes" : `Serviços digitais · ${rotuloEscopo(c.esc)}` };
+    case "tarifas": { const v = c.S(c.t.filter((x) => x.categoria === "Tarifas e juros")); return { valor: brl(v), det: v > 0.01 ? "Confira o que foi cobrado" : "Nada cobrado. Ótimo." }; }
     case "maior": {
       const t = c.compras.slice().sort((a, b) => b.valor - a.valor)[0];
       return { valor: t ? brl0(t.valor) : "—", det: t ? esc(t.descricao) + (t.parcela ? ` (${esc(t.parcela)})` : "") : "" };
     }
     case "ticket": return { valor: brl(c.compras.length ? soma(c.compras) / c.compras.length : 0), det: `${c.compras.length} compras` };
-    case "qtd": return { valor: String(c.compras.length), det: `compras em ${nm}` };
+    case "qtd": return { valor: String(Math.round(c.compras.length / c.div)), det: mesmo ? `compras em ${nm}` : `compras ${onde}` };
     case "limite": {
       const l = c.f.meta.limite;
       return { valor: l ? pct(c.f.meta.total / l) : "—", det: l ? `${brl0(c.f.meta.total)} de ${brl0(l)}` : "Limite não encontrado na fatura" };
@@ -271,7 +356,8 @@ function renderKpis(c) {
   const lista = PREFS.kpis;
   $("#kpis").innerHTML = lista.map((k, i) => {
     const r = calcular(k.m, c);
-    const titulo = k.titulo || r.titulo || nomeMetrica(k.m);
+    const auto = F.visao === "mes" ? nomeMetrica(k.m) : nomeMetrica(k.m).replace(/ (no|neste) mês$/, "");
+    const titulo = k.titulo || r.titulo || auto;
     return `<div class="kpi" data-kpi="${esc(k.id)}">
       <div class="l">${editando ? `<input class="titulo-edit" data-kpi-titulo="${esc(k.id)}" value="${esc(titulo)}" aria-label="Nome do card">` : esc(titulo)}</div>
       <div class="v">${r.valor}</div><div class="d">${r.det || ""}</div>
@@ -322,11 +408,18 @@ const vazioTxt = (t) => `<p class="muted">${t}</p>`;
 
 const RENDER = {
   total(c, el) {
-    setSub("total", filtrosAtivos() ? "· gastos filtrados" : "");
-    el.innerHTML = `<div class="chart"><canvas id="cTotal" aria-label="Total por mês"></canvas></div>`;
-    chart("cTotal", { type: "bar", data: { labels: c.fs.map((x) => rotulo(x.meta.id)),
-      datasets: [{ label: "Total", data: c.fs.map(valorFatura), ...bar,
-        backgroundColor: c.fs.map((x) => (x.meta.id === sel ? css("--s1") : css("--s1") + "88")) }] }, options: baseOpts() });
+    setSub("total", (F.visao !== "mes" ? `· ${VISOES[F.visao].toLowerCase()}` : "") + (filtrosAtivos() ? " · filtrado" : ""));
+    el.innerHTML = `<div class="chart"><canvas id="cTotal" aria-label="Gastos ao longo dos meses"></canvas></div>`;
+    const meses = c.fs.map((x) => x.meta.id), mensal = c.fs.map(valorFatura);
+    const ds = [{ type: "bar", label: "No mês", data: mensal, ...bar, order: 2,
+      backgroundColor: meses.map((id) => (id === sel ? css("--s1") : css("--s1") + (F.visao === "mes" ? "88" : "55"))) }];
+    if (F.visao !== "mes") ds.push({ type: "line", label: VISOES[F.visao], data: serieVisao(meses, mensal), order: 1,
+      borderColor: css("--s2"), backgroundColor: css("--s2"), borderWidth: 2.5, tension: 0.25, cubicInterpolationMode: "monotone",
+      pointRadius: meses.map((id) => (id === sel ? 5 : 2.5)),
+      // no acumulado do ano, a linha recomeça em janeiro (sem ligar dezembro a janeiro)
+      segment: { borderColor: (ctx) => (F.visao === "ano" && meses[ctx.p1DataIndex].slice(5) === "01" ? "transparent" : undefined) } });
+    const o = baseOpts(); o.plugins.legend.display = F.visao !== "mes"; o.plugins.legend.position = "bottom";
+    chart("cTotal", { data: { labels: meses.map(rotulo), datasets: ds }, options: o });
   },
   catmes(c, el) {
     el.innerHTML = `<div class="chart"><canvas id="cCatMes" aria-label="Categorias por mês"></canvas></div>`;
@@ -335,14 +428,16 @@ const RENDER = {
     const series = [...top, "Demais"].map((k, i) => ({
       label: k, ...bar, borderRadius: 0, borderColor: css("--surface"), borderWidth: { top: 2 },
       backgroundColor: css(`--s${i < top.length ? i + 1 : 8}`),
-      data: c.fs.map((x) => { const m = porCategoria(x); return k === "Demais" ? Object.entries(m).filter(([n]) => !top.includes(n)).reduce((a, [, v]) => a + v, 0) : (m[k] || 0); }),
+      data: serieVisao(c.fs.map((x) => x.meta.id), c.fs.map((x) => { const m = porCategoria(x); return k === "Demais" ? Object.entries(m).filter(([n]) => !top.includes(n)).reduce((a, [, v]) => a + v, 0) : (m[k] || 0); })),
     })).filter((s) => s.data.some((v) => v > 0));
+    setSub("catmes", F.visao !== "mes" ? `· ${VISOES[F.visao].toLowerCase()}` : "");
     const o = baseOpts(); o.scales.x.stacked = o.scales.y.stacked = true; o.plugins.legend.display = true; o.plugins.legend.position = "bottom";
     chart("cCatMes", { type: "bar", data: { labels: c.fs.map((x) => rotulo(x.meta.id)), datasets: series }, options: o });
   },
   cat(c, el) {
-    setSub("cat", `· ${rotulo(sel)}`);
-    const cat = porCategoria(c.f), tot = Object.values(cat).reduce((a, b) => a + b, 0);
+    setSub("cat", `· ${rotuloEscopo(c.esc)}`);
+    const cat = {}; for (const t of c.t) cat[t.categoria] = (cat[t.categoria] || 0) + t.valor / c.div;
+    const tot = Object.values(cat).reduce((a, b) => a + b, 0);
     const cs = Object.entries(cat).filter(([, v]) => v > 0.004).sort((a, b) => b[1] - a[1]);
     if (!cs.length) { el.innerHTML = vazioTxt("Nada com esses filtros."); return; }
     el.innerHTML = `<div class="chart" style="height:${Math.max(200, cs.length * 30 + 40)}px"><canvas id="cCat" aria-label="Gastos por categoria no mês"></canvas></div>`;
@@ -365,9 +460,9 @@ const RENDER = {
     chart("cParc", { type: "bar", data: { labels: pm.map(rotulo), datasets: [{ label: "Parcelas", data: pm.map((m) => proj[m]), ...bar, backgroundColor: css("--s2") }] }, options: baseOpts() });
   },
   top(c, el) {
-    setSub("top", `· ${rotulo(sel)}`);
+    setSub("top", `· ${rotuloEscopo(c.esc)}`);
     const agg = {};
-    for (const t of c.t) { if (t.valor <= 0) continue; const a = (agg[t.estabelecimento] ||= { n: 0, v: 0, c: t.categoria }); a.n++; a.v += t.valor; }
+    for (const t of c.t) { if (t.valor <= 0) continue; const a = (agg[t.estabelecimento] ||= { n: 0, v: 0, c: t.categoria }); a.n++; a.v += t.valor / c.div; }
     const linhas = Object.entries(agg).sort((a, b) => b[1].v - a[1].v).slice(0, 25);
     el.innerHTML = linhas.length ? `<div class="tbl"><table><thead><tr><th>Estabelecimento</th><th class="n">Vezes</th><th class="n">Total</th><th>Categoria</th></tr></thead><tbody>` +
       linhas.map(([e, a]) => `<tr><td>${esc(e)}</td><td class="n">${a.n}</td><td class="n">${brl(a.v)}</td><td>${selCat(e, a.c)}</td></tr>`).join("") + "</tbody></table></div>" : vazioTxt("Nada com esses filtros.");
@@ -389,8 +484,8 @@ const RENDER = {
       `<tr><td><b>Total</b></td><td class="n"><b>${brl(recs.reduce((a, [, r]) => a + r.v, 0))}</b></td><td></td><td></td></tr></tbody></table></div>` : vazioTxt("Nada recorrente com esses filtros."));
   },
   lanc(c, el) {
-    setSub("lanc", `· ${rotulo(sel)} · ${c.t.length} lançamentos · ${brl(soma(c.t))}`);
-    const rows = c.t.slice().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+    setSub("lanc", `· ${F.visao === "media3" ? rotuloEscopo(c.esc, "acum") : rotuloEscopo(c.esc)} · ${c.t.length} lançamentos · ${brl(soma(c.t))}`);
+    const rows = c.t.slice().sort((a, b) => (b.data || "").localeCompare(a.data || "")).slice(0, 1500);
     el.innerHTML = `<p class="muted small">Mude a categoria de um estabelecimento e a correção vale para todas as faturas.</p>` + (rows.length ?
       `<div class="tbl long"><table><thead><tr><th>Data</th><th>Estabelecimento</th><th>Parcela</th><th>Cartão</th><th class="n">Valor</th><th>Categoria</th></tr></thead><tbody>` +
       rows.map((t) => `<tr><td>${t.data ? t.data.slice(8) + "/" + t.data.slice(5, 7) : ""}</td><td>${esc(t.descricao)}</td><td>${esc(t.parcela || "")}</td><td>${esc(nomeCartao(t))}</td><td class="n">${brl(t.valor)}</td><td>${selCat(t.estabelecimento, t.categoria)}</td></tr>`).join("") +
@@ -424,6 +519,11 @@ function render() {
   if (F.banco) ativos.push(F.banco);
   if (F.cartao) ativos.push("cartão " + ($("#fCartao").selectedOptions[0]?.textContent || ""));
   if (F.tipo) ativos.push(F.tipo === "vista" ? "à vista" : "parcelado");
+  document.querySelectorAll(".filtros [data-ativo]").forEach((x) => x.removeAttribute("data-ativo"));
+  if (F.cats) $("#fCatBox").setAttribute("data-ativo", "");
+  if (F.banco) $("#fBanco").setAttribute("data-ativo", "");
+  if (F.cartao) $("#fCartao").setAttribute("data-ativo", "");
+  if (F.busca.trim()) $("#fBusca").setAttribute("data-ativo", "");
   if (F.busca.trim()) ativos.push(`“${F.busca.trim()}”`);
   $("#fResumo").textContent = ativos.length ? `Filtrando: ${ativos.join(" · ")}. Cards, gráficos e tabelas mostram só o que passa nos filtros.` : "";
   $("#fResumo").hidden = !ativos.length;
@@ -453,11 +553,10 @@ document.addEventListener("change", async (e) => {
     F.de = $("#fDe").value; F.ate = $("#fAte").value;
     if (F.de > F.ate) { if (t.id === "fDe") F.ate = F.de; else F.de = F.ate; $("#fDe").value = F.de; $("#fAte").value = F.ate; }
     if (sel < F.de || sel > F.ate) { sel = F.ate; $("#mes").value = sel; }
-    mudou();
+    marcarSegmentos(); mudou();
   }
   else if (t.id === "fCartao") { F.cartao = t.value; mudou(); }
   else if (t.id === "fBanco") { F.banco = t.value; mudou(); }
-  else if (t.id === "fTipo") { F.tipo = t.value; mudou(); }
   else if (t.closest("#fCat")) { lerCats(); mudou(); }
   else if (d.kpiMetrica) { const k = PREFS.kpis.find((x) => x.id === d.kpiMetrica); k.m = t.value; delete k.titulo; mudou(); }
   else if (d.kpiTitulo) { const k = PREFS.kpis.find((x) => x.id === d.kpiTitulo); const v = t.value.trim(); if (v) k.titulo = v; else delete k.titulo; mudou(); }
@@ -485,6 +584,14 @@ document.addEventListener("click", async (e) => {
   else if (b.id === "editar") { editando = !editando; render(); }
   else if (b.id === "concluir") { editando = false; render(); }
   else if (b.id === "fLimpar") { Object.assign(F, { de: "", ate: "", cats: null, banco: "", cartao: "", tipo: "", busca: "" }); montarControles(); mudou(); }
+  else if (d.visao) { F.visao = d.visao; marcarSegmentos(); mudou(); }
+  else if (d.tipo !== undefined) { F.tipo = d.tipo; marcarSegmentos(); mudou(); }
+  else if (d.periodo) {
+    const [de, ate] = presetDatas(d.periodo, ids()); F.de = de; F.ate = ate;
+    $("#fDe").value = de; $("#fAte").value = ate;
+    if (sel < de || sel > ate) { sel = ate; $("#mes").value = sel; }
+    marcarSegmentos(); mudou();
+  }
   else if (b.hasAttribute("data-cat-todas")) { F.cats = null; montarControles(); mudou(); }
   else if (b.hasAttribute("data-cat-nenhuma")) { F.cats = new Set(); montarControles(); mudou(); }
   else if (b.id === "addKpi") { PREFS.kpis.push({ id: "k" + Date.now().toString(36), m: "maior" }); mudou(); document.querySelector("#kpis .kpi:last-child select")?.focus(); }

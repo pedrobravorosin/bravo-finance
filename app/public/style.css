@@ -1,9 +1,11 @@
 [hidden]{display:none!important}
 :root{
+  /* Marca: troque estas três cores para seguir a identidade visual */
+  --marca:#0f2740;--marca-2:#1f4e79;--destaque:#2ec4a0;
   color-scheme:light;
   --bg:#f6f6f4;--surface:#fcfcfb;--border:#e4e3df;--text:#0b0b0b;--text2:#52514e;--muted:#7a7974;
-  --accent:#2a78d6;--grid:#ecebe7;--good:#0ca30c;--bad:#d03b3b;
-  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#9a9993;
+  --accent:var(--marca-2);--grid:#ecebe7;--good:#0ca30c;--bad:#d03b3b;
+  --s1:var(--marca-2);--s2:#eb6834;--s3:var(--destaque);--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#9a9993;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -60,20 +62,46 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td select{padding:3px 6px;font-size:13px}
 .tag{font-size:12px;color:var(--text2);border:1px solid var(--border);border-radius:99px;padding:1px 8px;white-space:nowrap}
 
-/* Filtros */
-.filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;position:sticky;top:0;z-index:5}
-.filtros .grow{flex:1;min-width:160px}
-.filtros input[type=search]{width:100%}
-.filtro-resumo{flex-basis:100%;margin:0}
+/* Controles uniformes: selects, busca, botões de filtro e segmentos têm a mesma altura e forma */
+.grupo{display:flex;flex-direction:column;gap:5px;min-width:0}
+.rotulo{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controle{appearance:none;-webkit-appearance:none;font:inherit;font-size:14px;height:36px;line-height:34px;padding:0 34px 0 12px;
+  color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;white-space:nowrap;
+  transition:border-color .15s,background-color .15s,box-shadow .15s}
+select.controle,summary.controle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a8a85' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+.controle:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border))}
+.controle:focus-visible,.segmentos button:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent);border-color:var(--accent)}
+.controle[data-ativo],.multi[data-ativo] .controle{border-color:var(--accent);background-color:color-mix(in srgb,var(--accent) 9%,var(--surface));color:var(--text);font-weight:600}
+.controle.busca{cursor:text;padding:0 12px 0 34px;width:100%;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Ccircle cx='6' cy='6' r='4.3' fill='none' stroke='%238a8a85' stroke-width='1.6'/%3E%3Cpath d='m9.3 9.3 3 3' stroke='%238a8a85' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:left 12px center}
+.controle.limpar{padding:0 14px;align-self:flex-end;color:var(--accent);font-weight:600;background:transparent;border-color:transparent}
+.controle.limpar:hover{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.segmentos{display:inline-flex;height:36px;padding:3px;gap:2px;background:color-mix(in srgb,var(--text) 5%,var(--surface));border:1px solid var(--border);border-radius:10px}
+.segmentos button{font:inherit;font-size:13.5px;border:0;background:transparent;color:var(--text2);padding:0 12px;border-radius:7px;cursor:pointer;white-space:nowrap;transition:background-color .15s,color .15s}
+.segmentos button:hover{color:var(--text)}
+.segmentos button[aria-pressed=true]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px var(--border)}
+.segmentos button[data-visao][aria-pressed=true]{background:var(--accent);color:#fff;box-shadow:none}
+
+/* Barra de filtros */
+.filtros{display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;position:sticky;top:0;z-index:5;box-shadow:0 1px 0 var(--border)}
+.filtros-linha{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+.filtros-linha+.filtros-linha{border-top:1px solid var(--border);padding-top:12px}
+.filtros .cresce{flex:1;min-width:180px}
+.periodo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.periodo .ate{font-size:13px;color:var(--muted)}
+.filtro-resumo{margin:0;font-size:13px;color:var(--text2)}
 .multi{position:relative}
-.multi summary{list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 28px 7px 10px;min-width:150px;color:var(--text);white-space:nowrap;position:relative}
+.multi summary{list-style:none;min-width:160px}
 .multi summary::-webkit-details-marker{display:none}
-.multi summary::after{content:"▾";position:absolute;right:10px;color:var(--muted)}
-.multi-pop{position:absolute;z-index:20;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:230px;max-height:340px;overflow:auto}
-.multi-pop label{display:flex;gap:8px;align-items:center;padding:3px 0;color:var(--text);font-size:14px;cursor:pointer}
+.multi-pop{position:absolute;z-index:20;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 10px;box-shadow:0 12px 32px rgba(0,0,0,.18);min-width:240px;max-height:360px;overflow:auto}
+.multi-pop label{display:flex;gap:8px;align-items:center;padding:4px 2px;color:var(--text);font-size:14px;cursor:pointer;border-radius:6px}
+.multi-pop label:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.multi-pop input{accent-color:var(--accent)}
 .multi-acoes{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px}
-.btn.link.neutro{color:var(--accent)}
 .multi-acoes .btn.link{color:var(--accent)}
+@media (max-width:700px){.segmentos{overflow-x:auto;max-width:100%}.filtros{position:static}}
 
 /* Painéis */
 .paineis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
