@@ -44,6 +44,27 @@ jobs:
         with:
           name: macos
           path: dist/*.dmg
+      - name: Instalar como um usuário faria (copiar para Aplicativos)
+        run: |
+          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/BravoFinance-macOS-AppleSilicon.dmg"
+          cp -R "/tmp/bf/Bravo Finance.app" /Applications/
+          hdiutil detach /tmp/bf
+          codesign --verify --deep --strict "/Applications/Bravo Finance.app"
+      - name: Testes com o Python do app
+        run: |
+          rm -rf app && ln -s "/Applications/Bravo Finance.app/Contents/Resources/app" app
+          "/Applications/Bravo Finance.app/Contents/Resources/python/bin/python3" -m unittest discover tests -v
+      - name: Abrir o app e conferir que o servidor liga e desliga
+        run: |
+          open "/Applications/Bravo Finance.app"
+          for i in $(seq 1 30); do pgrep -f "Bravo Finance.app/Contents/Resources/app/server.py" && break; sleep 1; done
+          pgrep -f "Bravo Finance.app/Contents/Resources/app/server.py"
+          lsof -nP -iTCP -sTCP:LISTEN | grep -i python | tee /tmp/portas
+          ! grep -v "127.0.0.1" /tmp/portas
+          osascript -e 'quit app "Bravo Finance"'
+          sleep 5
+          ! pgrep -f "Bravo Finance.app/Contents/Resources/app/server.py"
+
 
   testar-windows:
     needs: windows-e-linux
@@ -90,16 +111,9 @@ jobs:
       - run: test -f /usr/share/applications/bravo-finance.desktop && command -v bravo-finance
       - run: sudo apt-get remove -y bravo-finance && test ! -e /opt/bravo-finance/python
 
-  testar-macos:
+  testar-macos-intel:
     needs: macos
-    strategy:
-      matrix:
-        include:
-          - runner: macos-15
-            dmg: BravoFinance-macOS-AppleSilicon.dmg
-          - runner: macos-15-intel
-            dmg: BravoFinance-macOS-Intel.dmg
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -108,7 +122,7 @@ jobs:
           path: dist
       - name: Instalar como um usuário faria (copiar para Aplicativos)
         run: |
-          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/${{ matrix.dmg }}"
+          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/BravoFinance-macOS-Intel.dmg"
           cp -R "/tmp/bf/Bravo Finance.app" /Applications/
           hdiutil detach /tmp/bf
           codesign --verify --deep --strict "/Applications/Bravo Finance.app"
@@ -127,9 +141,10 @@ jobs:
           sleep 5
           ! pgrep -f "Bravo Finance.app/Contents/Resources/app/server.py"
 
+
   publicar:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [testar-windows, testar-linux, testar-macos]
+    needs: [macos, testar-windows, testar-linux, testar-macos-intel]
     runs-on: ubuntu-latest
     permissions:
       contents: write
