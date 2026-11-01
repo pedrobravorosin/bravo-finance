@@ -2,11 +2,19 @@ name: release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Versão (ex.: v1.0.1)"
+        required: true
 permissions:
   contents: write
 jobs:
   pacotes:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,6 +24,9 @@ jobs:
       - run: python -m unittest discover tests -v
       - run: bash ferramentas/empacotar.sh
       - name: Publicar na página de Releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Financeiro $GITHUB_REF_NAME" --generate-notes
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Financeiro $TAG" --generate-notes
+          fi
