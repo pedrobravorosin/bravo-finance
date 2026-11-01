@@ -1,11 +1,13 @@
 # Constrói e testa os três instaladores em máquinas reais de cada sistema.
-# Rode manualmente (Actions > construir > Run workflow) para só gerar os arquivos
-# (ficam em "Artifacts" da execução), ou crie uma tag v* para publicar uma versão.
+# Gera os arquivos sem publicar (ficam em "Artifacts" da execução) ao rodar manualmente
+# (Actions > construir > Run workflow) ou ao enviar um branch teste/...
+# Uma tag v* gera, testa e publica a versão.
 name: construir
 on:
   workflow_dispatch:
   push:
     tags: ["v*"]
+    branches: ["teste/**"]
 permissions:
   contents: read
 jobs:
