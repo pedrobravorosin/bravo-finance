@@ -1,0 +1,39 @@
+FINANCEIRO - painel das faturas do cartão (Windows 10 e 11)
+=============================================================
+
+Você envia o PDF da fatura do cartão e o Financeiro mostra gráficos e tabelas:
+quanto gastou em cada categoria, a evolução mês a mês, as parcelas que ainda
+vão vencer e as assinaturas. Funciona com faturas de vários bancos.
+
+PRIVACIDADE: tudo fica só no seu computador. O PDF é lido aqui mesmo e nada é
+enviado para a internet. O instalador também não usa a internet: o Python e as
+bibliotecas já vêm dentro deste pacote.
+
+COMO INSTALAR
+1. Clique com o botão direito no arquivo .zip e escolha "Extrair tudo".
+2. Abra a pasta extraída e dê dois cliques em "Instalar.bat".
+3. Se aparecer "O Windows protegeu o computador", clique em "Mais informações"
+   e depois em "Executar assim mesmo". O aviso aparece porque o instalador não
+   tem assinatura digital de empresa.
+4. Espere terminar (cerca de 1 minuto) e aperte uma tecla para fechar.
+5. Abra pelo atalho "Financeiro" na Área de Trabalho ou no Menu Iniciar.
+Não precisa ser administrador.
+
+COMO USAR
+- Clique em "Enviar faturas (PDF)" ou arraste os PDFs para a janela.
+- Use o PDF baixado do app ou do site do banco (foto ou escaneado não funciona).
+- Se o PDF tiver senha, o Financeiro pergunta. A senha não fica salva.
+- Enviar de novo a fatura do mesmo mês e banco substitui a anterior.
+- Mude a categoria de um estabelecimento nas tabelas; vale para todas as faturas.
+- Filtros: período, categoria, banco, cartão, à vista ou parcelado, busca.
+- "Personalizar": escolha o que cada card mostra, renomeie, reordene, esconda.
+- Na tabela "Faturas salvas", a coluna "Leitura" avisa quando a soma dos
+  lançamentos não bate com o total da fatura. Confira essas.
+- Para desligar, é só fechar a janela.
+
+ONDE FICAM AS FATURAS
+%LOCALAPPDATA%\Financeiro\dados  (cole na barra do Explorador de Arquivos)
+Para levar para outro computador, copie essa pasta.
+
+ATUALIZAR: rode o "Instalar.bat" da versão nova. As faturas são mantidas.
+DESINSTALAR: dois cliques em "Desinstalar.bat". Ele pergunta antes de apagar as faturas.

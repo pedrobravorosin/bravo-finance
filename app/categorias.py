@@ -1,0 +1,38 @@
+"""Regras padrão de categoria. Correções feitas no painel ficam em dados/categorias.json
+e têm prioridade sobre estas regras."""
+import re
+
+CATEGORIAS = [
+    "Restaurantes", "Bares e baladas", "Delivery", "Mercado", "Transporte",
+    "Moradia", "Compras online", "Vestuário e pessoais", "Assinaturas",
+    "Viagem", "Saúde e seguros", "Tarifas e juros", "Outros",
+]
+
+REGRAS = [
+    ("Tarifas e juros", r"ANUIDADE|IOF|JUROS|TARIFA|MULTA|ENCARGO"),
+    ("Moradia", r"QUINTOANDAR|LEROY|TELHA NORTE|ENEL|SABESP|COMGAS|CEMIG|\bLIGHT\b|COPEL|CONDOMIN|ALUGUEL|\bVIVO\b|\bCLARO\b|\bTIM\b|\bNET\b"),
+    ("Saúde e seguros", r"SEGURO|ODONTO|PETLOVE|PETZ|COBASI|DROG|FARMA|RAIA|PACHECO|PAGUE MENOS|HOSPITAL|LABORAT|UNIMED|AMIL|SULAMERICA|HAPVIDA"),
+    ("Assinaturas", r"NETFLIX|SPOTIFY|APPLE|LINKEDIN|PRIME|WELLHUB|GYMPASS|SMARTFIT|OPENAI|ANTHROPIC|GODADDY|WIX|GOOGLE|YOUTUBE|DISNEY|HBO|MAX\.COM|GLOBOPLAY|DEEZER|ICLOUD|MICROSOFT|ADOBE|PARAMOUNT"),
+    ("Delivery", r"^IFD\*|IFOOD|RAPPI|ZE DELIVERY|99FOOD|AIQFOME"),
+    ("Bares e baladas", r"BOTECO|\bBAR\b|BAR E |ADEGA|NIGHT ?CLUB|DANCETERIA|CERVEJARIA|CHOPP|PUB\b|BALADA"),
+    ("Restaurantes", r"RESTAURAN|STEAK|CHURRASC|EMPORIO|LANCHONETE|PADARIA|PANIFIC|BISTRO|GOURMET|ESFIHA|PIZZA|BURGER|BURGUER|HAMBURG|CAFE|SUSHI|LANCHE|MCDONALDS|BURGER KING|SUBWAY|OUTBACK|COCO BAMBU"),
+    ("Mercado", r"\bMERCADO\b(?!\s?(?:LIVRE|PAGO))|HORTIFRUT|SACOLAO|ATACADAO|ASSAI|CARREFOUR|PAO DE ACUCAR|EXTRA|CARNES|ACOUGUE|OXXO|MINUTO|SUPERMERC|MERCADINHO|SONDA|ZAFFARI|BH SUPERMERC|GUANABARA"),
+    ("Transporte", r"UBER|99\s?APP|99\*|99POP|METRO|LOCALIZA|MOVIDA|UNIDAS|PETRO|POSTO|SHELL|IPIRANGA|PARK|ESTACIONA|BUSER|CLICKBUS|SEM PARAR|CONECTCAR|VELOE|PEDAGIO"),
+    ("Viagem", r"LATAM|GOL LINHAS|AZUL|HOTEL|POUSADA|AIRBNB|BOOKING|DECOLAR|HOSTEL|123MILHAS|CVC"),
+    ("Compras online", r"MERCADOLIVRE|MERCADO LIVRE|AMAZON|SHOPEE|ALIEXPRESS|SHEIN|MAGALU|MAGAZINE|AMERICANAS|CASAS BAHIA|KABUM|TEMU"),
+    ("Vestuário e pessoais", r"LEVIS|ZARA|RENNER|C&A|RIACHUELO|HERING|NIKE|ADIDAS|CENTAURO|NETSHOES|BARBEARIA|BARBER|SALAO|PAPELARIA|BOTICARIO|NATURA|SEPHORA"),
+]
+
+
+def normaliza(desc):
+    return re.sub(r"\s+", " ", desc.upper()).strip()
+
+
+def categoria(desc, overrides):
+    k = normaliza(desc)
+    if k in overrides:
+        return overrides[k]
+    for nome, pad in REGRAS:
+        if re.search(pad, k):
+            return nome
+    return "Outros"

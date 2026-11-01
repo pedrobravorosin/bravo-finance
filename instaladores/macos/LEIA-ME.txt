@@ -1,0 +1,30 @@
+FINANCEIRO - painel das faturas do cartão (macOS 11 ou mais novo)
+==================================================================
+
+Você envia o PDF da fatura do cartão e o Financeiro mostra gráficos e tabelas:
+gastos por categoria, evolução mês a mês, parcelas a vencer e assinaturas.
+Funciona com faturas de vários bancos. É um app nativo do Mac (janela própria).
+
+PRIVACIDADE: tudo fica só no seu Mac. O PDF é lido aqui mesmo e nada é enviado
+para a internet. A internet só é usada na instalação, para baixar as bibliotecas
+de leitura de PDF (versões fixas, conferidas por hash).
+
+COMO INSTALAR
+1. Dê dois cliques no .zip para extrair.
+2. Na pasta "Financeiro", clique com o botão direito em "Instalar.command" e
+   escolha "Abrir" (na primeira vez o macOS pede essa confirmação).
+   Se o macOS não deixar, abra o Terminal, arraste o arquivo "Instalar.command"
+   para dentro dele e aperte Enter.
+3. Se o Mac pedir para instalar as "ferramentas de linha de comando", aceite,
+   espere terminar e rode o "Instalar.command" de novo.
+4. Abra o Financeiro pelo Dock, pelo Launchpad ou em Aplicativos do usuário.
+
+COMO USAR
+- Clique em "Enviar faturas (PDF)" ou arraste os PDFs para a janela.
+- Use o PDF baixado do app ou do site do banco (foto ou escaneado não funciona).
+- Se o PDF tiver senha, o Financeiro pergunta. A senha não fica salva.
+- Filtros, "Personalizar" e a coluna "Leitura" funcionam como descrito no README.
+- Para desligar, feche a janela ou use Cmd+Q. Nada liga sozinho com o Mac.
+
+ONDE FICAM AS FATURAS: ~/Library/Application Support/Financeiro/dados
+DESINSTALAR: botão direito em "Desinstalar.command" > Abrir.

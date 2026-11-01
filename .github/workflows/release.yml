@@ -1,0 +1,21 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  pacotes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --require-hashes --only-binary=:all: -r app/requirements.txt
+      - run: python -m unittest discover tests -v
+      - run: bash ferramentas/empacotar.sh
+      - name: Publicar na página de Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Financeiro $GITHUB_REF_NAME" --generate-notes

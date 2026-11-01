@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Financeiro</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='10' rx='2' fill='%232a78d6'/%3E%3Crect x='1' y='5.5' width='14' height='2' fill='%23fff'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Financeiro</h1>
+    <p class="sub">Tudo roda no seu computador. Nenhum dado sai daqui.</p>
+  </div>
+  <div class="actions">
+    <label class="field">Fatura em destaque
+      <select id="mes"></select>
+    </label>
+    <button id="editar" class="btn" type="button" aria-pressed="false">Personalizar</button>
+    <label class="btn primary" for="arquivo">Enviar faturas (PDF)</label>
+    <input id="arquivo" type="file" accept="application/pdf,.pdf" multiple hidden>
+  </div>
+</header>
+
+<div id="drop" class="drop" hidden>Solte os PDFs para enviar</div>
+<div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
+<form id="senhaBox" class="aviso senha" hidden>
+  <label for="senhaInput"><b id="senhaTitulo">Esta fatura tem senha.</b> Digite a senha do PDF (muitos bancos usam parte do CPF). Ela só é usada para abrir o arquivo e não fica salva.</label>
+  <span class="senha-linha"><input id="senhaInput" type="password" autocomplete="off" required><button class="btn primary" type="submit">Abrir</button><button id="senhaPular" class="btn" type="button">Pular</button></span>
+</form>
+
+<main id="vazio" class="vazio" hidden>
+  <h2>Nenhuma fatura ainda</h2>
+  <p>Clique em <b>Enviar faturas (PDF)</b> ou arraste os arquivos para esta janela. Pode enviar vários meses e vários bancos de uma vez.</p>
+  <p class="muted small">Use o PDF baixado do app ou do site do banco. Foto ou PDF escaneado não funciona.</p>
+</main>
+
+<main id="painel" hidden>
+  <section class="filtros" aria-label="Filtros">
+    <label class="field">De<select id="fDe"></select></label>
+    <label class="field">Até<select id="fAte"></select></label>
+    <div class="field">Categorias
+      <details class="multi" id="fCatBox">
+        <summary id="fCatResumo">Todas</summary>
+        <div class="multi-pop">
+          <div class="multi-acoes"><button type="button" class="btn link" data-cat-todas>Marcar todas</button><button type="button" class="btn link" data-cat-nenhuma>Limpar</button></div>
+          <div id="fCat"></div>
+        </div>
+      </details>
+    </div>
+    <label class="field" id="fBancoBox">Banco<select id="fBanco"></select></label>
+    <label class="field">Cartão<select id="fCartao"></select></label>
+    <label class="field">Tipo<select id="fTipo">
+      <option value="">Todos</option><option value="vista">À vista</option><option value="parcelado">Parcelado</option>
+    </select></label>
+    <label class="field grow">Buscar<input id="fBusca" type="search" placeholder="Estabelecimento"></label>
+    <button id="fLimpar" class="btn" type="button">Limpar filtros</button>
+    <p id="fResumo" class="muted small filtro-resumo"></p>
+  </section>
+
+  <div id="barraEdicao" class="barra-edicao" hidden>
+    <span>Modo de personalização: mude o conteúdo e o nome dos cards, esconda, reordene e ajuste a largura.</span>
+    <span class="acoes">
+      <button id="addKpi" class="btn" type="button">+ Card de número</button>
+      <select id="addPainel" aria-label="Reexibir painel"><option value="">+ Reexibir painel…</option></select>
+      <button id="restaurar" class="btn" type="button">Restaurar padrão</button>
+      <button id="concluir" class="btn primary" type="button">Concluir</button>
+    </span>
+  </div>
+
+  <section class="kpis" id="kpis"></section>
+  <section class="paineis" id="paineis"></section>
+</main>
+<script src="vendor/chart.umd.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

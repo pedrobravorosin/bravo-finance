@@ -1,0 +1,16 @@
+# Dados pessoais: nunca versionar
+dados/
+data/
+*.pdf
+!tests/exemplos/*.pdf
+preferencias.json
+regras.json
+
+# Gerados
+dist/
+.cache/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
