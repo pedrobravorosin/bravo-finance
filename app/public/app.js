@@ -412,7 +412,7 @@ const RENDER = {
     el.innerHTML = `<div class="chart"><canvas id="cTotal" aria-label="Gastos ao longo dos meses"></canvas></div>`;
     const meses = c.fs.map((x) => x.meta.id), mensal = c.fs.map(valorFatura);
     const ds = [{ type: "bar", label: "No mês", data: mensal, ...bar, order: 2,
-      backgroundColor: meses.map((id) => (id === sel ? css("--s1") : css("--s1") + (F.visao === "mes" ? "88" : "55"))) }];
+      backgroundColor: meses.map((id) => (F.visao === "mes" ? (id === sel ? css("--s2") : css("--s1")) : css("--s1") + (id === sel ? "" : "44"))) }];
     if (F.visao !== "mes") ds.push({ type: "line", label: VISOES[F.visao], data: serieVisao(meses, mensal), order: 1,
       borderColor: css("--s2"), backgroundColor: css("--s2"), borderWidth: 2.5, tension: 0.25, cubicInterpolationMode: "monotone",
       pointRadius: meses.map((id) => (id === sel ? 5 : 2.5)),

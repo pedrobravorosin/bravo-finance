@@ -12,11 +12,11 @@ import math
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
-PALETA = {
-    "base": (15, 39, 64),        # cor principal da marca (fundo do ícone)
-    "base_clara": (31, 78, 121),  # ponta clara do degradê
-    "destaque": (46, 196, 160),   # cor de destaque (ponto)
-    "simbolo": (255, 255, 255),
+PALETA = {  # cores da paleta BestMap: tinta, papel e o laranja do logo
+    "base": (14, 14, 14),         # ink #0E0E0E
+    "base_clara": (46, 46, 43),   # #2E2E2B, ponta clara do degradê
+    "destaque": (194, 65, 12),    # brand-mark #C2410C
+    "simbolo": (245, 245, 242),   # paper #F5F5F2
 }
 S = 2048
 DEST = Path(__file__).resolve().parent.parent / "app" / "icone"
