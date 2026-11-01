@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Bravo Finance
+GenericName=Painel de faturas do cartão
+Comment=Acompanhe suas faturas de cartão no seu computador, sem internet
+Exec=bravo-finance
+Icon=bravo-finance
+Terminal=false
+Categories=Office;Finance;
+Keywords=fatura;cartão;finanças;gastos;
+StartupNotify=true

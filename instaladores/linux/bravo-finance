@@ -1,0 +1,3 @@
+#!/bin/sh
+# Abre o Bravo Finance (instalado em /opt/bravo-finance pelo pacote .deb).
+exec /opt/bravo-finance/python/bin/python3 -I -s /opt/bravo-finance/app/abrir.py "$@"

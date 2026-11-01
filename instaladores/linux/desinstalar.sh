@@ -1,9 +1,13 @@
-#!/bin/bash
-# Remove o Financeiro do Linux. Pergunta antes de apagar as faturas.
-set -euo pipefail
-BASE="${XDG_DATA_HOME:-$HOME/.local/share}/financeiro"
-pkill -f "$BASE/app/server.py" 2>/dev/null || true
-rm -f "${XDG_DATA_HOME:-$HOME/.local/share}/applications/financeiro.desktop"
-rm -rf "$BASE/app" "$BASE/venv" "$BASE/janela"
-read -r -p "Apagar também as faturas salvas em $BASE/dados? (s/N) " r
-if [[ "$r" =~ ^[sS] ]]; then rm -rf "$BASE"; echo "Tudo apagado."; else echo "Suas faturas continuam em $BASE/dados"; fi
+#!/bin/sh
+# Remove o Bravo Finance instalado pelo instalar.sh. Suas faturas ficam guardadas,
+# a não ser que você responda "s" no fim.
+set -eu
+D="${XDG_DATA_HOME:-$HOME/.local/share}"
+rm -rf "$D/bravo-finance-app" "$D/applications/bravo-finance.desktop" "$D/icons/hicolor/256x256/apps/bravo-finance.png" \
+  "$HOME/.local/bin/bravo-finance"
+echo "Bravo Finance removido."
+if [ -d "$D/bravo-finance" ]; then
+  printf "Apagar também suas faturas e configurações (%s)? [s/N] " "$D/bravo-finance"
+  read -r r || r=n
+  [ "$r" = "s" ] || [ "$r" = "S" ] && rm -rf "$D/bravo-finance" && echo "Dados apagados." || echo "Dados mantidos."
+fi

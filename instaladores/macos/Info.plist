@@ -2,17 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>Financeiro</string>
-  <key>CFBundleDisplayName</key><string>Financeiro</string>
-  <key>CFBundleIdentifier</key><string>com.local.financeiro</string>
-  <key>CFBundleExecutable</key><string>Financeiro</string>
-  <key>CFBundleIconFile</key><string>AppIcon</string>
-  <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>2.0</string>
-  <key>CFBundleVersion</key><string>2</string>
-  <key>FinanceiroPasta</key><string>Library/Application Support/Financeiro</string>
-  <key>LSMinimumSystemVersion</key><string>11.0</string>
-  <key>NSHighResolutionCapable</key><true/>
-  <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+	<key>CFBundleName</key><string>Bravo Finance</string>
+	<key>CFBundleDisplayName</key><string>Bravo Finance</string>
+	<key>CFBundleIdentifier</key><string>io.github.pedrobravorosin.bravofinance</string>
+	<key>CFBundleExecutable</key><string>BravoFinance</string>
+	<key>CFBundleIconFile</key><string>bravo-finance</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>VERSAO</string>
+	<key>CFBundleVersion</key><string>VERSAO</string>
+	<key>CFBundleDevelopmentRegion</key><string>pt-BR</string>
+	<key>LSMinimumSystemVersion</key><string>11.0</string>
+	<key>LSApplicationCategoryType</key><string>public.app-category.finance</string>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key><true/>
+	<key>NSHumanReadableCopyright</key><string>Licença MIT. Funciona sem internet; seus dados não saem do Mac.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key><true/>
+	</dict>
 </dict>
 </plist>
