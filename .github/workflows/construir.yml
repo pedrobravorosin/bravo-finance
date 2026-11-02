@@ -32,8 +32,10 @@ jobs:
             dist/*.deb
             dist/*.tar.gz
 
+  # Gera os dois .dmg numa máquina Intel (a fila de máquinas Apple Silicon do GitHub
+  # costuma não liberar vaga) e já testa o .dmg Intel nela.
   macos:
-    runs-on: macos-15
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,7 +48,7 @@ jobs:
           path: dist/*.dmg
       - name: Instalar como um usuário faria (copiar para Aplicativos)
         run: |
-          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/BravoFinance-macOS-AppleSilicon.dmg"
+          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/BravoFinance-macOS-Intel.dmg"
           cp -R "/tmp/bf/Bravo Finance.app" /Applications/
           hdiutil detach /tmp/bf
           codesign --verify --deep --strict "/Applications/Bravo Finance.app"
@@ -111,9 +113,12 @@ jobs:
       - run: test -f /usr/share/applications/bravo-finance.desktop && command -v bravo-finance
       - run: sudo apt-get remove -y bravo-finance && test ! -e /opt/bravo-finance/python
 
-  testar-macos-intel:
+  # Teste no chip Apple. Não segura a publicação se o GitHub não liberar a máquina.
+  testar-macos-applesilicon:
+    continue-on-error: true
+    timeout-minutes: 30
     needs: macos
-    runs-on: macos-15-intel
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -122,7 +127,7 @@ jobs:
           path: dist
       - name: Instalar como um usuário faria (copiar para Aplicativos)
         run: |
-          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/BravoFinance-macOS-Intel.dmg"
+          hdiutil attach -nobrowse -mountpoint /tmp/bf "dist/BravoFinance-macOS-AppleSilicon.dmg"
           cp -R "/tmp/bf/Bravo Finance.app" /Applications/
           hdiutil detach /tmp/bf
           codesign --verify --deep --strict "/Applications/Bravo Finance.app"
@@ -141,10 +146,9 @@ jobs:
           sleep 5
           ! pgrep -f "Bravo Finance.app/Contents/Resources/app/server.py"
 
-
   publicar:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [macos, testar-windows, testar-linux, testar-macos-intel]
+    needs: [macos, testar-windows, testar-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
